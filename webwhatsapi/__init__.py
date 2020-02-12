@@ -32,7 +32,7 @@ from .objects.message import MessageGroup, factory_message
 from .objects.number_status import NumberStatus
 from .wapi_js_wrapper import WapiJsWrapper
 
-__version__ = '2.0.3'
+__version__ = '2.0.4'
 
 
 class WhatsAPIDriverStatus(object):
@@ -69,7 +69,7 @@ class WhatsAPIDriver(object):
 
     _SELECTORS = {
         'firstrun': "#wrapper",
-        'qrCode': "img[alt=\"Scan me!\"]",
+        'qrCode': "canvas[aria-label=\"Scan me!\"]",
         'qrCodePlain': "div[data-ref]",
         'mainPage': ".app.two",
         'chatList': ".infinite-list-viewport",
@@ -297,7 +297,7 @@ class WhatsAPIDriver(object):
         return fn_png
 
     def get_qr_base64(self):
-        if "Click to reload QR code" in self.driver.page_source:
+        if "Clique para carregar o código QR novamente" in self.driver.page_source:
             self.reload_qr()
         qr = self.driver.find_element_by_css_selector(self._SELECTORS['qrCode'])
 
