@@ -67,7 +67,26 @@ if (!window.Store) {
             }
         }
 
-        webpackJsonp([], { 'parasite': (x, y, z) => getStore(z) }, ['parasite']);
+        //webpackJsonp([], { 'parasite': (x, y, z) => getStore(z) }, ['parasite']);
+
+        /*
+        Code update thanks to
+        topkek,bobaoapae, TinsWeb, KopeK, Bruno, Bento
+        compatibility for old versions thanks felippeefreire
+        */
+        if (typeof webpackJsonp === 'function') {
+        webpackJsonp([], {'parasite': (x, y, z) => getStore(z)}, ['parasite']);
+            } else {
+                webpackJsonp.push([
+                    ['parasite'],
+                    {
+                        parasite: function (o, e, t) {
+                            getStore(t);
+                        }
+                    },
+                    [['parasite']]
+                ]);
+            }
     })();
 }
 
