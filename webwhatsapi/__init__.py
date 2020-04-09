@@ -9,9 +9,12 @@ import logging
 import os
 import shutil
 import tempfile
+import requests
+import mimetypes 
 from base64 import b64decode, b64encode
 from io import BytesIO
 from json import dumps, loads
+from pyvirtualdisplay import Display
 
 import magic
 from axolotl.kdf.hkdfv3 import HKDFv3
@@ -32,7 +35,7 @@ from .objects.message import MessageGroup, factory_message
 from .objects.number_status import NumberStatus
 from .wapi_js_wrapper import WapiJsWrapper
 
-__version__ = '2.0.6'
+__version__ = '2.0.3'
 
 
 class WhatsAPIDriverStatus(object):
@@ -111,6 +114,10 @@ class WhatsAPIDriver(object):
 
     def save_firefox_profile(self, remove_old=False):
         """Function to save the firefox profile to the permanant one"""
+
+        if self._profile_path is None:
+            raise Exception('Profile parameter is blank. Add a path')
+
         self.logger.info("Saving profile from %s to %s" % (self._profile.path, self._profile_path))
 
         if remove_old:
@@ -209,17 +216,31 @@ class WhatsAPIDriver(object):
 
         elif self.client == "chrome":
             self._profile = webdriver.ChromeOptions()
+           
+
             if self._profile_path is not None:
-                self._profile.add_argument("user-data-dir=%s" % self._profile_path)
+                self._profile.add_argument("--user-data-dir=%s" % self._profile_path)
+                
             if proxy is not None:
                 self._profile.add_argument('--proxy-server=%s' % proxy)
+            
             if headless:
-                self._profile.add_argument('headless')
+                self.display = Display(visible=0, size=(1920, 1080)).start()
+                #self._profile.add_argument('--headless')
+                self._profile.add_argument('--disable-gpu')
+                self._profile.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36')                
+                
             if chrome_options is not None:
                 for option in chrome_options:
                     self._profile.add_argument(option)
-            self.logger.info("Starting webdriver")
-            self.driver = webdriver.Chrome(chrome_options=self._profile, **extra_params)
+            
+            if executable_path is not None:
+                self.logger.info("Starting webdriver")
+                self.driver = webdriver.Chrome(executable_path=executable_path, chrome_options=self._profile, **extra_params)
+            
+            else:
+                self.logger.info("Starting webdriver")
+                self.driver = webdriver.Chrome(chrome_options=self._profile, **extra_params)
 
         elif client == 'remote':
             if self._profile_path is not None:
@@ -235,6 +256,7 @@ class WhatsAPIDriver(object):
 
         else:
             self.logger.error("Invalid client: %s" % client)
+
         self.username = username
         self.wapi_functions = WapiJsWrapper(self.driver, self)
 
@@ -279,7 +301,13 @@ class WhatsAPIDriver(object):
         )
 
     def get_qr_plain(self):
-        return self.driver.find_element_by_css_selector(self._SELECTORS['qrCodePlain']).get_attribute("data-ref")
+        if "Click to reload QR code" in self.driver.page_source:
+            self.reload_qr()
+        qr = self.driver.find_element_by_css_selector(self._SELECTORS['qrCode'])
+
+        qr_base64 = self.driver.execute_script("return arguments[0].toDataURL('image/png').substring(22);", qr)
+
+        return "data:image/png;base64," + qr_base64
 
     def get_qr(self, filename=None):
         """Get pairing QR code from client"""
@@ -301,7 +329,9 @@ class WhatsAPIDriver(object):
             self.reload_qr()
         qr = self.driver.find_element_by_css_selector(self._SELECTORS['qrCode'])
 
-        return qr.screenshot_as_base64
+        qr_base64 = self.driver.execute_script("return arguments[0].toDataURL('image/png').substring(22);", qr)
+
+        return qr_base64
 
     def screenshot(self, filename):
         self.driver.get_screenshot_as_file(filename)
@@ -612,6 +642,58 @@ class WhatsAPIDriver(object):
         filename = os.path.split(path)[-1]
         return self.wapi_functions.sendImage(imgBase64, chatid, filename, caption)
 
+    def send_media_base64(self, base64_string, content_type, chatid, caption, file_name=None):
+        """
+            send file in base 64 using the sendImage function of wapi.js
+        :param base64: base64 string
+        :param content_type: file mime, sample (image/png) https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types
+        :param chatid: chatId to be sent
+        :param caption:
+        :param file_name: name of file
+        :return:
+        """
+        extension = mimetypes.guess_extension(content_type)
+
+        if file_name is None:
+            file = 'file' + extension
+        else:
+            file = file_name + extension
+        
+        imgBase64 = 'data:' + content_type + ';base64,' + base64_string
+        
+        return self.wapi_functions.sendImage(imgBase64, chatid, file, caption)
+
+    def send_media_url(self, url, chatid, caption, file_name=None):
+        """
+            download file and send using wapi.js sendImage function
+        :param url: url file
+        :param chatid: chatId to be sent
+        :param caption:
+        :param file_name: name of file
+        :return:
+        """
+        
+        res = requests.get(url)
+
+        if res.status_code == 200:
+            content_type = res.headers['Content-Type']
+            base64_string = b64encode(res.content).decode('utf-8')
+
+            imgBase64 = "data:" + content_type + ";" + "base64," + base64_string
+
+            extension = mimetypes.guess_extension(content_type)
+
+            if file_name is None:
+                file = 'file' + extension
+            else:
+                file = file_name + extension
+
+            return self.wapi_functions.sendImage(imgBase64, chatid, file, caption)
+
+        else:
+            raise Exception('Impossible to access url. Erro : ' + str(res.status_code))
+            
+
     def send_message_with_thumbnail(self, path, chatid, url, title, description, text):
         """
             converts the file to base64 and sends it using the sendImage function of wapi.js
@@ -682,6 +764,22 @@ class WhatsAPIDriver(object):
             return b64decode(profile_pic)
         else:
             return False
+    
+    def get_profile_pic_from_id_base64(self, id):
+        """
+        Get full profile pic from an id
+        The ID must be on your contact book to
+        successfully get their profile picture.
+
+        :param id: ID
+        :type id: str
+        """
+        profile_pic = self.wapi_functions.getProfilePicFromId(id)
+        if profile_pic:
+            return str(profile_pic)
+        else:
+            return False
+
 
     def get_profile_pic_small_from_id(self, id):
         """
