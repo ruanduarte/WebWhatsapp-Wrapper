@@ -328,7 +328,7 @@ class WhatsAPIDriver(object):
 
     def get_qr(self, filename=None):
         """Get pairing QR code from client"""
-        if "Click to reload QR code" in self.driver.page_source:
+        if "Clique para carregar o código QR novamente" in self.driver.page_source:
             self.reload_qr()
         qr = self.driver.find_element_by_css_selector(self._SELECTORS["qrCode"])
         if filename is None:
@@ -342,7 +342,7 @@ class WhatsAPIDriver(object):
         return fn_png
 
     def get_qr_base64(self):
-        if "Click to reload QR code" in self.driver.page_source:
+        if "Clique para carregar o código QR novamente" in self.driver.page_source:
             self.reload_qr()
         qr = self.driver.find_element_by_css_selector(self._SELECTORS["qrCode"])
 
