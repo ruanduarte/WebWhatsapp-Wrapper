@@ -1,17 +1,19 @@
 /**
  * This script contains WAPI functions that need to be run in the context of the webpage
+ * MrTheblood.
  */
 
 /**
  * Auto discovery the webpack object references of instances that contains all functions used by the WAPI
  * functions and creates the Store object.
  */
+
 if (!window.Store) {
     (function () {
         function getStore(modules) {
             let foundCount = 0;
             let neededObjects = [
-                { id: "Store", conditions: (module) => (module.default && module.default.Chat && module.default.Msg) ? module.default : null },
+                { id: "Store", conditions: (module) => (module.Chat && module.Msg) ? module : null },
                 { id: "MediaCollection", conditions: (module) => (module.default && module.default.prototype && module.default.prototype.processAttachments) ? module.default : null },
                 { id: "MediaProcess", conditions: (module) => (module.BLOB) ? module : null },
                 { id: "Wap", conditions: (module) => (module.createGroup) ? module : null },
@@ -58,29 +60,34 @@ if (!window.Store) {
                                 window.Store[needObj.id] = needObj.foundedModule;
                             }
                         });
-                        window.Store.sendMessage = function (e) {
+                         window.Store.sendMessage = function (e) {
                             return window.Store.SendTextMsgToChat(this, ...arguments);
-                        };
+                        }
                         return window.Store;
                     }
                 }
             }
         }
 
+        //webpackJsonp([], { 'parasite': (x, y, z) => getStore(z) }, ['parasite']);
+        /*
+        Code update thanks to
+        topkek,bobaoapae, TinsWeb, KopeK, Bruno, Bento
+        compatibility for old versions thanks felippeefreire
+        */
         if (typeof webpackJsonp === 'function') {
-            webpackJsonp([], {'parasite': (x, y, z) => getStore(z)}, ['parasite']);
-        } else {
-            webpackJsonp.push([
-                ['parasite'],
-                {
-                    parasite: function (o, e, t) {
-                        getStore(t);
-                    }
-                },
-                [['parasite']]
-            ]);
-        }
-
+        webpackJsonp([], {'parasite': (x, y, z) => getStore(z)}, ['parasite']);
+            } else {
+                webpackJsonp.push([
+                    ['parasite'],
+                    {
+                        parasite: function (o, e, t) {
+                            getStore(t);
+                        }
+                    },
+                    [['parasite']]
+                ]);
+            }
     })();
 }
 
@@ -281,10 +288,11 @@ window.WAPI.getAllChatIds = function (done) {
  * @returns {Array|*} List of chats
  */
 window.WAPI.getAllGroups = function (done) {
-    const groups = window.Store.Chat.filter((chat) => chat.isGroup);
+    var lil = window.Store.Chat.filter((chat) => chat.isGroup);
+    const t = lil.map((lil) => [lil.name,lil.id._serialized].join(";") || chat.name);
 
-    if (done !== undefined) done(groups);
-    return groups;
+    if (done !== undefined) done(t);
+    return t;
 };
 
 /**
@@ -297,13 +305,14 @@ window.WAPI.getAllGroups = function (done) {
 window.WAPI.getChat = function (id, done) {
     id = typeof id == "string" ? id : id._serialized;
     const found = window.Store.Chat.get(id);
-    found.sendMessage = (found.sendMessage) ? found.sendMessage : function () { return window.Store.sendMessage.apply(this, arguments); };
+        if (found)
+        found.sendMessage = (found.sendMessage) ? found.sendMessage : function () { return window.Store.sendMessage.apply(this, arguments); };
     if (done !== undefined) done(found);
     return found;
 }
 
 window.WAPI.getChatByName = function (name, done) {
-    const found = window.WAPI.getAllChats().find(val => val.name.includes(name))
+    const found = window.Store.Chat.find((chat) => chat.name === name);
     if (done !== undefined) done(found);
     return found;
 };
@@ -339,7 +348,7 @@ window.WAPI.sendImageFromDatabasePicBot = function (picId, chatId, caption) {
     return true;
 };
 
-window.WAPI.sendMessageWithThumb = function (thumb, url, title, description, text, chatId, done) {
+window.WAPI.sendMessageWithThumb = function (thumb, url, title, description, chatId, done) {
     var chatSend = WAPI.getChat(chatId);
     if (chatSend === undefined) {
         if (done !== undefined) done(false);
@@ -350,13 +359,9 @@ window.WAPI.sendMessageWithThumb = function (thumb, url, title, description, tex
         description : description,
         matchedText : url,
         title       : title,
-        thumbnail   : thumb,
-        compose: true
+        thumbnail   : thumb
     };
-    chatSend.sendMessage(text, { linkPreview: linkPreview,
-                                mentionedJidList: [],
-                                quotedMsg: null,
-                                quotedMsgAdminGroupJid: null });
+    chatSend.sendMessage(url, { linkPreview: linkPreview, mentionedJidList: [], quotedMsg: null, quotedMsgAdminGroupJid: null });
     if (done !== undefined) done(true);
     return true;
 };
@@ -503,6 +508,18 @@ window.WAPI.areAllMessagesLoaded = function (id, done) {
  * @returns None
  */
 
+// window.WAPI.loadEarlierMessagesTillDate = function (id, lastMessage, done) {
+//     const found = WAPI.getChat(id);
+//     x = function () {
+//         if (found.msgs.models[0].t > lastMessage) {
+//             found.loadEarlierMsgs().then(x);
+//         } else {
+//             done();
+//         }
+//     };
+//     x();
+//
+
 window.WAPI.loadEarlierMessagesTillDate = function (id, lastMessage, done) {
     const found = WAPI.getChat(id);
     x = function () {
@@ -514,7 +531,6 @@ window.WAPI.loadEarlierMessagesTillDate = function (id, lastMessage, done) {
     };
     x();
 };
-
 
 /**
  * Fetches all group metadata objects from store
@@ -607,14 +623,6 @@ window.WAPI.isLoggedIn = function (done) {
     return isLogged;
 };
 
-window.WAPI.isConnected = function (done) {
-    // Phone Disconnected icon appears when phone is disconnected from the tnternet
-    const isConnected = document.querySelector('*[data-icon="alert-phone"]') !== null ? false : true;
-
-    if (done !== undefined) done(isConnected);
-    return isConnected;
-};
-
 window.WAPI.processMessageObj = function (messageObj, includeMe, includeNotifications) {
     if (messageObj.isNotification) {
         if (includeNotifications)
@@ -687,12 +695,19 @@ window.WAPI.ReplyMessage = function (idMessage, message, done) {
         if (done !== undefined) done(false);
         return false;
     }
-    messageObject = messageObject.value();
+    messageObject = messageObject.valueOf();
+
+    let params = {
+        linkPreview : null,
+        mentionedJidList : null,
+        quotedMsg : messageObject,
+        quotedMsgAdminGroupJid : null
+    };
 
     const chat = WAPI.getChat(messageObject.chat.id)
     if (chat !== undefined) {
         if (done !== undefined) {
-            chat.sendMessage(message, null, messageObject).then(function () {
+            chat.sendMessage(message, params, messageObject).then(function () {
                 function sleep(ms) {
                     return new Promise(resolve => setTimeout(resolve, ms));
                 }
@@ -721,7 +736,7 @@ window.WAPI.ReplyMessage = function (idMessage, message, done) {
             });
             return true;
         } else {
-            chat.sendMessage(message, null, messageObject);
+            chat.sendMessage(message, params, messageObject);
             return true;
         }
     } else {
@@ -729,6 +744,7 @@ window.WAPI.ReplyMessage = function (idMessage, message, done) {
         return false;
     }
 };
+
 
 window.WAPI.sendMessageToID = function (id, message, done) {
     try {
@@ -850,7 +866,7 @@ window.WAPI.sendSeen = function (id, done) {
             });
             return true;
         } else {
-            Store.SendSeen(chat, false);
+            Store.SendSeen(Chat, false);
             return true;
         }
     }
@@ -1099,12 +1115,11 @@ window.WAPI.deleteMessage = function (chatId, messageArray, revoke=false, done) 
     if (!Array.isArray(messageArray)) {
         messageArray = [messageArray];
     }
-    let messagesToDelete = messageArray.map(msgId => window.Store.Msg.get(msgId));
 
     if (revoke) {
-        conversation.sendRevokeMsgs(messagesToDelete, conversation);
+        conversation.sendRevokeMsgs(messageArray, conversation);
     } else {
-        conversation.sendDeleteMsgs(messagesToDelete, conversation);
+        conversation.sendDeleteMsgs(messageArray, conversation);
     }
 
 
