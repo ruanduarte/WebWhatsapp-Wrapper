@@ -19,7 +19,7 @@ if (!window.Store) {
                 { id: "State", conditions: (module) => (module.STATE && module.STREAM) ? module : null },
                 { id: "WapDelete", conditions: (module) => (module.sendConversationDelete && module.sendConversationDelete.length == 2) ? module : null },
                 { id: "Conn", conditions: (module) => (module.default && module.default.ref && module.default.refTTL) ? module.default : null },
-                { id: "WapQuery", conditions: (module) => (module.queryExist) ? module : ((module.default && module.default.queryExist) ? module.default : null) },
+                { id: "WapQuery", conditions: (module) => (module.default && module.default.queryExist) ? module.default : null },
                 { id: "CryptoLib", conditions: (module) => (module.decryptE2EMedia) ? module : null },
                 { id: "OpenChat", conditions: (module) => (module.default && module.default.prototype && module.default.prototype.openChat) ? module.default : null },
                 { id: "UserConstructor", conditions: (module) => (module.default && module.default.prototype && module.default.prototype.isServer && module.default.prototype.isUser) ? module.default : null },
@@ -739,6 +739,13 @@ window.WAPI.sendMessageToID = function (id, message, done) {
             if (contact.status === 404) {
                 done(true);
             } else {
+                if(typeof contact.jid === 'undefined') {
+                        contact.jid = {
+                            '_serialized' : id,
+                            'server' : '@' + id.split('@')[1],
+                            'user' : id.split('@')[0]
+                        }
+                 }
                 Store.Chat.find(contact.jid).then(chat => {
                     chat.sendMessage(message);
                     return true;
@@ -780,7 +787,11 @@ window.WAPI.sendMessage = function (id, message, done) {
     var chat = WAPI.getChat(id);
     if (chat !== undefined) {
         if (done !== undefined) {
-            chat.sendMessage(message).then(function () {
+            chat.sendMessage(message);
+
+            // Fix from https://github.com/mukulhase/WebWhatsapp-Wrapper/pull/1003#issuecomment-785545951
+            // .then(function () {
+            function checkmessage() {
                 function sleep(ms) {
                     return new Promise(resolve => setTimeout(resolve, ms));
                 }
@@ -806,7 +817,10 @@ window.WAPI.sendMessage = function (id, message, done) {
                     sleep(500).then(check);
                 }
                 check();
-            });
+            } // );
+
+            checkmessage();
+
             return true;
         } else {
             chat.sendMessage(message);
@@ -817,6 +831,7 @@ window.WAPI.sendMessage = function (id, message, done) {
         return false;
     }
 };
+
 
 window.WAPI.sendMessage2 = function (id, message, done) {
     var chat = WAPI.getChat(id);
