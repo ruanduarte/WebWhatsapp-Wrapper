@@ -76,7 +76,7 @@ class WhatsAPIDriver(object):
         "firstrun": "#wrapper",
         "qrCode": "canvas",
         "qrCodePlain": "div[data-ref]",
-        "mainPage": ".two",
+        "mainPage": ".app.two",
         "chatList": ".infinite-list-viewport",
         "messageList": "#main > div > div:nth-child(1) > div > div.message-list",
         "unreadMessageBar": "#main > div > div:nth-child(1) > div > div.message-list > div.msg-unread",
@@ -89,8 +89,8 @@ class WhatsAPIDriver(object):
         "UnreadBadge": ".icon-meta",
         "UnreadChatBanner": ".message-list",
         "ReconnectLink": ".action",
-        "WhatsappQrIcon": "span.icon:nth-child(2)",
-        "QRReloader": "div[data-ref] > span > div",
+        "WhatsappQrIcon": 'span.icon:nth-child(2)',
+        "QRReloader": '.qr-wrapper-container',
         "OpenHereButton": "div[data-animate-modal-body=true] div[role=button]:nth-child(2)",
     }
 
