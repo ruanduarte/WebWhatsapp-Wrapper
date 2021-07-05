@@ -35,7 +35,7 @@ from .objects.message import MessageGroup, factory_message
 from .objects.number_status import NumberStatus
 from .wapi_js_wrapper import WapiJsWrapper
 
-__version__ = "4.0.6"
+__version__ = "4.0.7"
 
 
 class WhatsAPIDriverStatus(object):
@@ -76,7 +76,7 @@ class WhatsAPIDriver(object):
         "firstrun": "#wrapper",
         "qrCode": "canvas",
         "qrCodePlain": "div[data-ref]",
-        "mainPage": ".app.two",
+        "mainPage": ".two",
         "chatList": ".infinite-list-viewport",
         "messageList": "#main > div > div:nth-child(1) > div > div.message-list",
         "unreadMessageBar": "#main > div > div:nth-child(1) > div > div.message-list > div.msg-unread",
