@@ -35,7 +35,7 @@ from .objects.message import MessageGroup, factory_message
 from .objects.number_status import NumberStatus
 from .wapi_js_wrapper import WapiJsWrapper
 
-__version__ = "4.0.10"
+__version__ = "4.0.11"
 
 
 class WhatsAPIDriverStatus(object):
@@ -90,7 +90,7 @@ class WhatsAPIDriver(object):
         "UnreadChatBanner": ".message-list",
         "ReconnectLink": ".action",
         "WhatsappQrIcon": 'span.icon:nth-child(2)',
-        "QRReloader": "div[data-ref] > span > button",
+        "QRReloader": "div[data-ref]",
         "OpenHereButton": "div[data-animate-modal-body=true] div[role=button]:nth-child(2)",
     }
 
@@ -588,7 +588,9 @@ class WhatsAPIDriver(object):
         raise ChatNotFoundError("Chat for phone {0} not found".format(number))
 
     def reload_qr(self):
-        self.driver.find_element_by_css_selector(self._SELECTORS["QRReloader"]).click()
+        elm = self.driver.find_element_by_css_selector(self._SELECTORS["QRReloader"])
+        if elm.text != "":
+            elm.click()
 
     def get_status(self):
         """
