@@ -35,7 +35,7 @@ from .objects.message import MessageGroup, factory_message
 from .objects.number_status import NumberStatus
 from .wapi_js_wrapper import WapiJsWrapper
 
-__version__ = "4.0.7"
+__version__ = "4.0.8"
 
 
 class WhatsAPIDriverStatus(object):
@@ -328,7 +328,7 @@ class WhatsAPIDriver(object):
 
     def get_qr(self, filename=None):
         """Get pairing QR code from client"""
-        if "Clique para carregar o código QR novamente" in self.driver.page_source:
+        if "Clique para recarregar o código QR" in self.driver.page_source:
             self.reload_qr()
         qr = self.driver.find_element_by_css_selector(self._SELECTORS["qrCode"])
         if filename is None:
@@ -342,7 +342,7 @@ class WhatsAPIDriver(object):
         return fn_png
 
     def get_qr_base64(self):
-        if "Clique para carregar o código QR novamente" in self.driver.page_source:
+        if "Clique para recarregar o código QR" in self.driver.page_source:
             self.reload_qr()
         try:
             qr = self.driver.find_element_by_css_selector(self._SELECTORS["qrCode"])
