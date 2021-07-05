@@ -35,7 +35,7 @@ from .objects.message import MessageGroup, factory_message
 from .objects.number_status import NumberStatus
 from .wapi_js_wrapper import WapiJsWrapper
 
-__version__ = "4.0.9"
+__version__ = "4.0.10"
 
 
 class WhatsAPIDriverStatus(object):
@@ -90,7 +90,7 @@ class WhatsAPIDriver(object):
         "UnreadChatBanner": ".message-list",
         "ReconnectLink": ".action",
         "WhatsappQrIcon": 'span.icon:nth-child(2)',
-        "QRReloader": "div[data-ref] > span > div",
+        "QRReloader": "div[data-ref] > span > button",
         "OpenHereButton": "div[data-animate-modal-body=true] div[role=button]:nth-child(2)",
     }
 
