@@ -35,7 +35,7 @@ from .objects.message import MessageGroup, factory_message
 from .objects.number_status import NumberStatus
 from .wapi_js_wrapper import WapiJsWrapper
 
-__version__ = "4.0.12"
+__version__ = "4.0.13"
 
 
 class WhatsAPIDriverStatus(object):
@@ -328,8 +328,7 @@ class WhatsAPIDriver(object):
 
     def get_qr(self, filename=None):
         """Get pairing QR code from client"""
-        if "Clique para recarregar o código QR".lower() in self.driver.find_element_by_css_selector(self._SELECTORS["QRReloader"]).lower():
-            self.reload_qr()
+        self.verificar_reload_qr()
         qr = self.driver.find_element_by_css_selector(self._SELECTORS["qrCode"])
         if filename is None:
             fd, fn_png = tempfile.mkstemp(prefix=self.username, suffix=".png")
@@ -340,10 +339,14 @@ class WhatsAPIDriver(object):
         qr.screenshot(fn_png)
         os.close(fd)
         return fn_png
+    def verificar_reload_qr(self):
+        if "Clique para recarregar o código QR".lower() in str(self.driver.page_source).lower() or  \
+                "Clique para recarregar o código QR".lower() in self.driver.find_element_by_css_selector(self._SELECTORS["QRReloader"]).lower() or \
+                "recarregar".lower() in self.driver.find_element_by_css_selector(self._SELECTORS["QRReloader"]).lower():
+            self.reload_qr()
 
     def get_qr_base64(self):
-        if "Clique para recarregar o código QR".lower() in str(self.driver.page_source).lower():
-            self.reload_qr()
+        self.verificar_reload_qr()
         try:
             qr = self.driver.find_element_by_css_selector(self._SELECTORS["qrCode"])
         except NoSuchElementException:
@@ -588,9 +591,10 @@ class WhatsAPIDriver(object):
         raise ChatNotFoundError("Chat for phone {0} not found".format(number))
 
     def reload_qr(self):
-        elm = self.driver.find_element_by_css_selector(self._SELECTORS["QRReloader"])
-        if elm.text != "":
-            elm.click()
+        self.driver.refresh()
+        # elm = self.driver.find_element_by_css_selector(self._SELECTORS["QRReloader"])
+        # if elm.text != "":
+        #     elm.click()
 
     def get_status(self):
         """
