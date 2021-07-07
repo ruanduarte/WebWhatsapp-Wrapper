@@ -35,7 +35,7 @@ from .objects.message import MessageGroup, factory_message
 from .objects.number_status import NumberStatus
 from .wapi_js_wrapper import WapiJsWrapper
 
-__version__ = "4.0.16"
+__version__ = "4.0.17"
 
 
 class WhatsAPIDriverStatus(object):
@@ -341,20 +341,14 @@ class WhatsAPIDriver(object):
         return fn_png
 
     def verificar_reload_qr(self):
-        txt = str(self.driver.page_source).lower()
-        check = "recarregar" in txt or 'reloader' in txt
-
-        if check:
-            return self.reload_qr()
+        try:
+            txt = self.driver.find_element_by_css_selector(self._SELECTORS["QRReloader"]).text.lower()
+        except Exception as e:
+            return True
         else:
-            try:
-                txt = self.driver.find_element_by_css_selector(self._SELECTORS["QRReloader"]).text.lower()
-                check = "recarregar" in txt or 'reloader' in txt
-            except Exception as e:
-                check = False
-            else:
-                if check:
-                    return self.reload_qr()
+            if "recarregar" in txt or 'reload' in txt:
+                return self.reload_qr()
+
 
 
     def get_qr_base64(self):
