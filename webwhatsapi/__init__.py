@@ -35,7 +35,7 @@ from .objects.message import MessageGroup, factory_message
 from .objects.number_status import NumberStatus
 from .wapi_js_wrapper import WapiJsWrapper
 
-__version__ = "4.0.14"
+__version__ = "4.0.15"
 
 
 class WhatsAPIDriverStatus(object):
@@ -341,10 +341,20 @@ class WhatsAPIDriver(object):
         return fn_png
 
     def verificar_reload_qr(self):
-        if "Clique para recarregar o código QR".lower() in str(self.driver.page_source).lower() or  \
-                "Clique para recarregar o código QR".lower() in self.driver.find_element_by_css_selector(self._SELECTORS["QRReloader"]).text.lower() or \
-                "recarregar".lower() in self.driver.find_element_by_css_selector(self._SELECTORS["QRReloader"]).text.lower():
-            self.reload_qr()
+        check = "Clique para recarregar o código QR".lower() in str(self.driver.page_source).lower()
+        if check:
+            return self.reload_qr()
+        else:
+            try:
+                check = "Clique para recarregar o código QR".lower() in self.driver.find_element_by_css_selector(self._SELECTORS["QRReloader"]).text.lower()
+            except Exception as e:
+                check = "recarregar".lower() in self.driver.find_element_by_css_selector(self._SELECTORS["QRReloader"]).text.lower()
+            else:
+                check = "recarregar".lower() in str(self.driver.page_source).lower()
+            finally:
+                if check:
+                    return self.reload_qr()
+
 
     def get_qr_base64(self):
         self.verificar_reload_qr()
