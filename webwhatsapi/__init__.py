@@ -122,7 +122,7 @@ class WhatsAPIDriver(object):
             )
         )
 
-    def save_firefox_profile(self, remove_old=False):
+    def save_firefox_profile(self, remove_old=True):
         """Function to save the firefox profile to the permanant one"""
         self.logger.info(
             "Saving profile from %s to %s" % (self._profile.path, self._profile_path)
